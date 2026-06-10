@@ -20,17 +20,17 @@ const listPublicPageV4Handler = (
 
 describe("skills.listPublicPageV4", () => {
   it("defines recommended rank indexes in contract order", () => {
-    expect(getSkillSearchDigestIndexFields("by_active_recommended_rank")).toEqual([
+    expect(getSkillSearchDigestIndexFields("by_active_recommended_installs_rank")).toEqual([
       "softDeletedAt",
       "statsStars",
-      "statsDownloads",
+      "statsInstallsAllTime",
       "updatedAt",
     ]);
-    expect(getSkillSearchDigestIndexFields("by_nonsuspicious_recommended_rank")).toEqual([
+    expect(getSkillSearchDigestIndexFields("by_nonsuspicious_recommended_installs_rank")).toEqual([
       "softDeletedAt",
       "isSuspicious",
       "statsStars",
-      "statsDownloads",
+      "statsInstallsAllTime",
       "updatedAt",
     ]);
   });
@@ -92,7 +92,7 @@ describe("skills.listPublicPageV4", () => {
     ).toBe("recommended");
   });
 
-  it("sorts highlighted recommended results by stars, downloads, then updatedAt", async () => {
+  it("sorts highlighted recommended results by stars, installs, then updatedAt", async () => {
     const result = await listPublicPageV4Handler(
       makeHighlightedCtx([
         makeDigest({
@@ -133,9 +133,9 @@ describe("skills.listPublicPageV4", () => {
 
     expect(result.page.map((entry) => entry.skill.slug)).toEqual([
       "stars-skill",
-      "downloads-skill",
-      "updated-skill",
       "installs-skill",
+      "updated-skill",
+      "downloads-skill",
     ]);
   });
 });

@@ -2,12 +2,11 @@
 
 ## Intent
 
-Install counts are a display and abuse-review signal. They are not a ranking
-signal.
+Install counts are a display, ranking, and abuse-review signal.
 
-Downloads and stars remain the popularity inputs for search/recommended
-ranking. Installs can help staff reason about abuse patterns, but they must not
-make a skill rank higher in public discovery.
+Installs and stars are the popularity inputs for search/recommended ranking.
+Downloads remain visible and sortable, but they must not make a skill rank
+higher in default public discovery.
 
 ## CLI Telemetry
 
@@ -19,6 +18,10 @@ best-effort event after a local install succeeds:
 ```
 
 Telemetry failures must not fail the local install command.
+
+Install telemetry is deduped by user, skill, root id, and UTC day before it
+touches root/install state. A duplicate same-day report for the same root is
+ignored. A different root for the same skill is still recorded.
 
 `clawhub sync` is a publishing/catalog workflow. It must not report install
 telemetry, because a scanned local root is not proof of a fresh install.
@@ -44,18 +47,18 @@ invalid values before scanning local roots.
 Search and recommended popularity boosts can use:
 
 ```text
-downloads
 stars
+installsAllTime
 ```
 
 They must not use:
 
 ```text
+downloads
 installsCurrent
-installsAllTime
 ```
 
-Call shapes that still include install fields for compatibility should ignore
+Call shapes that still include download fields for compatibility should ignore
 those fields when ranking.
 
 ## Publisher Abuse

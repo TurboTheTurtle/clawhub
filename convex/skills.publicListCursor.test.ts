@@ -166,6 +166,25 @@ function makeMissingRecommendedRankStatsCtx() {
   };
 }
 
+function makeCompleteRecommendedRankStatsCtx() {
+  const first = vi.fn(async () => null);
+  const withIndex = vi.fn((_indexName: string, build: (q: TestEqBuilder) => unknown) => {
+    build(new TestEqBuilder());
+    return { first };
+  });
+  const query = vi.fn((table: string) => {
+    if (table !== "skillSearchDigest") throw new Error(`unexpected table ${table}`);
+    return { withIndex };
+  });
+
+  return {
+    ctx: { db: { query } },
+    first,
+    query,
+    withIndex,
+  };
+}
+
 describe("public skill list deterministic cursors", () => {
   beforeEach(() => {
     getPageMock.mockReset();
@@ -181,7 +200,7 @@ describe("public skill list deterministic cursors", () => {
 
     expect(withIndex.mock.calls.map(([indexName]) => indexName)).toEqual([
       "by_active_stats_stars",
-      "by_active_stats_downloads",
+      "by_active_stats_installs_all_time",
     ]);
     expect(getPageMock).toHaveBeenCalledTimes(1);
     expect(getPageMock.mock.calls[0]?.[1]).toMatchObject({
@@ -203,7 +222,7 @@ describe("public skill list deterministic cursors", () => {
 
     expect(withIndex.mock.calls.map(([indexName]) => indexName)).toEqual([
       "by_nonsuspicious_stars",
-      "by_nonsuspicious_downloads",
+      "by_nonsuspicious_installs",
     ]);
     expect(getPageMock).toHaveBeenCalledTimes(1);
     expect(getPageMock.mock.calls[0]?.[1]).toMatchObject({
@@ -250,6 +269,32 @@ describe("public skill list deterministic cursors", () => {
     expect(getPageMock).toHaveBeenCalledTimes(1);
     expect(getPageMock.mock.calls[0]?.[1]).toMatchObject({
       index: "by_active_stats_downloads",
+      startIndexKey: [undefined],
+      startInclusive: true,
+    });
+  });
+
+  it("ignores old download-based recommended cursors after the install-rank index rename", async () => {
+    const { ctx } = makeCompleteRecommendedRankStatsCtx();
+    const staleCursor = cursorForIndex("by_active_recommended_rank", [
+      { __undef: 1 },
+      5,
+      100,
+      200,
+      201,
+      "skillSearchDigest:old",
+    ]);
+
+    await listPublicPageV4Handler(ctx, {
+      cursor: staleCursor,
+      sort: "recommended",
+      nonSuspiciousOnly: false,
+      numItems: 10,
+    });
+
+    expect(getPageMock).toHaveBeenCalledTimes(1);
+    expect(getPageMock.mock.calls[0]?.[1]).toMatchObject({
+      index: "by_active_recommended_installs_rank",
       startIndexKey: [undefined],
       startInclusive: true,
     });

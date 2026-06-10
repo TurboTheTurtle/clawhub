@@ -828,7 +828,7 @@ const NEW_SKILL_RATE_LIMITS = {
 } as const;
 
 const SORT_INDEXES = {
-  recommended: "by_active_recommended_rank",
+  recommended: "by_active_recommended_installs_rank",
   newest: "by_active_created",
   updated: "by_active_updated",
   name: "by_active_name",
@@ -839,7 +839,7 @@ const SORT_INDEXES = {
 
 // Compound indexes on skillSearchDigest that filter isSuspicious at the index level.
 const NONSUSPICIOUS_SORT_INDEXES = {
-  recommended: "by_nonsuspicious_recommended_rank",
+  recommended: "by_nonsuspicious_recommended_installs_rank",
   newest: "by_nonsuspicious_created",
   updated: "by_nonsuspicious_updated",
   name: "by_nonsuspicious_name",
@@ -6059,7 +6059,7 @@ async function hasMissingRecommendedRankStats(
 ) {
   if (decodedCursor) return false;
   if (nonSuspiciousOnly) {
-    const [missingStars, missingDownloads] = await Promise.all([
+    const [missingStars, missingInstalls] = await Promise.all([
       ctx.db
         .query("skillSearchDigest")
         .withIndex("by_nonsuspicious_stars", (q) =>
@@ -6068,18 +6068,18 @@ async function hasMissingRecommendedRankStats(
         .first(),
       ctx.db
         .query("skillSearchDigest")
-        .withIndex("by_nonsuspicious_downloads", (q) =>
+        .withIndex("by_nonsuspicious_installs", (q) =>
           q
             .eq("softDeletedAt", undefined)
             .eq("isSuspicious", false)
-            .eq("statsDownloads", undefined),
+            .eq("statsInstallsAllTime", undefined),
         )
         .first(),
     ]);
-    return Boolean(missingStars || missingDownloads);
+    return Boolean(missingStars || missingInstalls);
   }
 
-  const [missingStars, missingDownloads] = await Promise.all([
+  const [missingStars, missingInstalls] = await Promise.all([
     ctx.db
       .query("skillSearchDigest")
       .withIndex("by_active_stats_stars", (q) =>
@@ -6088,12 +6088,12 @@ async function hasMissingRecommendedRankStats(
       .first(),
     ctx.db
       .query("skillSearchDigest")
-      .withIndex("by_active_stats_downloads", (q) =>
-        q.eq("softDeletedAt", undefined).eq("statsDownloads", undefined),
+      .withIndex("by_active_stats_installs_all_time", (q) =>
+        q.eq("softDeletedAt", undefined).eq("statsInstallsAllTime", undefined),
       )
       .first(),
   ]);
-  return Boolean(missingStars || missingDownloads);
+  return Boolean(missingStars || missingInstalls);
 }
 
 function readDigestRankStat(
@@ -6159,7 +6159,8 @@ async function fetchHighlightedPage(
       case "recommended":
         return (
           (readDigestRankStat(a, "stars") - readDigestRankStat(b, "stars")) * multiplier ||
-          (readDigestRankStat(a, "downloads") - readDigestRankStat(b, "downloads")) * multiplier ||
+          (readDigestRankStat(a, "installsAllTime") - readDigestRankStat(b, "installsAllTime")) *
+            multiplier ||
           (a.updatedAt - b.updatedAt) * multiplier
         );
       case "stars":
